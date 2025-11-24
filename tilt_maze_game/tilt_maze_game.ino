@@ -1,70 +1,101 @@
+/*************************************************************************
+ * Accelerometer BMA250 Wireling Tutorial:
+ * This example program will show the basic method of printing out the 
+ * accelerometer values from the BMA250 to the Serial Monitor/Serial Plotter
+ * 
+ * Hardware by: TinyCircuits
+ * Code by: Laveréna Wienclaw for TinyCircuits
+ *
+ * Initiated: 11/29/2017 
+ * Updated: 12/06/2019
+ ************************************************************************/
+ 
+#include <Wire.h>         // For I2C communication with sensor
+#include <Wireling.h>     // For interfacing with Wirelings
+#include "BMA250.h"       // For interfacing with the accel. sensor
 #include <TinyScreen.h>
-#include "TinyArcade.h"
-#include "MazeData.h"
-#include "GameLogic.h"
-#include "Rendering.h"
 
+// Accelerometer sensor variables for the sensor and its values
+BMA250 accel_sensor;
+int x, y, z, temp;
 TinyScreen display = TinyScreen(TinyScreenPlus);
+int drawBallX, drawBallY;
 
-bool showStartScreen = true;  // Start with welcome screen
+// Make Serial Monitor compatible for all TinyCircuits processors
+#if defined(ARDUINO_ARCH_AVR)
+  #define SerialMonitorInterface Serial
+#elif defined(ARDUINO_ARCH_SAMD)
+  #define SerialMonitorInterface SerialUSB
+#endif
 
 void setup() {
-  arcadeInit();
+  SerialMonitorInterface.begin(115200);
+  Wire.begin();
+
   display.begin();
   display.setBrightness(15);
   display.setFlip(false);
-  
-  drawStartScreen();
+  display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Red);
+  display.drawRect(20, 20, 4, 4, TSRectangleFilled, TS_8b_Yellow);
+
+
+  // Initialize Wireling
+  Wireling.begin();
+  Wireling.selectPort(0); 
+
+  // Sets up the BMA250 accelerometer
+  accel_sensor.begin(BMA250_range_2g, BMA250_update_time_64ms); 
 }
 
 void loop() {
+  accel_sensor.read();//This function gets new data from the accelerometer
 
-   if (showStartScreen) {
-    if (checkButton(TAButton1) || checkButton(TAButton2) || 
-        checkJoystick(TAJoystickUp) || checkJoystick(TAJoystickDown) ||
-        checkJoystick(TAJoystickLeft) || checkJoystick(TAJoystickRight)) {
-      showStartScreen = false;
-      resetGame();  // Start the game
-      delay(200);  // Debounce
-    }
-    return;
+  // Get the acceleration values from the sensor and store them into local variables
+  // (Makes reading the rest of the program easier)
+  x = accel_sensor.X;
+  y = accel_sensor.Y;
+  z = accel_sensor.Z;
+  drawBallX = (y / 6) + 48;
+  drawBallY = (x / 9) + 32;
+  temp = ((accel_sensor.rawTemp * 0.5) + 24.0, 1);
+
+ // If the BMA250 is not found, nor connected correctly, these values will be produced
+ // by the sensor 
+  if (x == -1 && y == -1 && z == -1) {
+    // Print error message to Serial Monitor
+    SerialMonitorInterface.print("ERROR! NO BMA250 DETECTED!");
+  }
+  else { // if we have correct sensor readings: 
+    display.drawRect(drawBallX, drawBallY, 4, 4, TSRectangleFilled, TS_8b_Yellow);
+    showSerial();                 //Print to Serial Monitor or Serial Plotter
   }
 
-  // Check for restart
-  if (checkButton(TAButton1) || checkButton(TAButton2)) {
-    resetGame();
-    delay(200);
-    return;
-  }
   
-  // If level complete, show message
-  if (levelComplete) {
-    showLevelComplete();
-    delay(100);
-    return;
-  }
   
-  // Store old position
-  int oldX = ballX;
-  int oldY = ballY;
-  int newX = ballX;
-  int newY = ballY;
-  
-  // Read D-pad input
-  if (checkJoystick(TAJoystickUp))    newY -= 1;
-  if (checkJoystick(TAJoystickDown))  newY += 1;
-  if (checkJoystick(TAJoystickLeft))  newX -= 1;
-  if (checkJoystick(TAJoystickRight)) newX += 1;
 
-  // Only move if no collision
-  if (!checkCollision(newX, newY)) {
-    updateBallPosition(oldX, oldY, newX, newY);
-    
-    // Check win condition
-    if (checkGoalReached()) {
-      levelComplete = true;
-    }
-  }
+
+  // The BMA250 can only poll new sensor values every 64ms, so this delay
+  // will ensure that we can continue to read values
+  delay(256);
+  // ***Without the delay, there would not be any sensor output*** 
+}
+
+// Prints the sensor values to the Serial Monitor (found under 'Tools')
+void showSerial() {
+  SerialMonitorInterface.print("X = ");
+  SerialMonitorInterface.print(x);
   
-  delay(40);
+  SerialMonitorInterface.print("  Y = ");
+  SerialMonitorInterface.print(y);
+  
+  SerialMonitorInterface.print("  Z = ");
+  SerialMonitorInterface.print(z);
+  
+  SerialMonitorInterface.print("  Temperature(C) = ");
+  SerialMonitorInterface.println((accel_sensor.rawTemp * 0.5) + 24.0, 1);
+
+  SerialMonitorInterface.print("X-position to render ball = ");
+  SerialMonitorInterface.println(drawBallX);
+  SerialMonitorInterface.print("Y-position to render ball = ");
+  SerialMonitorInterface.println(drawBallY);
 }
