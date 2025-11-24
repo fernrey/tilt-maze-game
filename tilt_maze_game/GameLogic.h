@@ -59,7 +59,7 @@ void drawMaze();  // ADD THIS
 
 // Reset game to initial state
 void resetGame() {
-  ballX = cellSize + 1;
+  ballX = cellSize + 1;  // Start at (9, 9) approximately
   ballY = cellSize + 1;
   levelComplete = false;
   

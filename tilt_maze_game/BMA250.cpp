@@ -1,44 +1,55 @@
 #include "BMA250.h"
-#include <inttypes.h>
 #include "Arduino.h"
 #include <Wire.h>
 
 BMA250::BMA250()
 {
+  // Default to the standard Wire bus
+  _wire = &Wire;
 }
 
+// The new "begin" function that we will use
+void BMA250::begin(TwoWire *wireBus, uint8_t range, uint8_t bw)
+{
+  // Save the bus we were given
+  _wire = wireBus;
+  
+  // Now, use that bus for all commands
+  _wire->beginTransmission(BMA250_I2CADDR);
+  _wire->write(0x0F);
+  _wire->write(range);
+  _wire->endTransmission();
+  
+  _wire->beginTransmission(BMA250_I2CADDR);
+  _wire->write(0x10);
+  _wire->write(bw);
+  _wire->endTransmission();
+}
+
+// The old "begin" function (we won't use this, but it's good to keep)
 void BMA250::begin(uint8_t range, uint8_t bw)
 {
-  //Setup the range measurement setting
-  Wire.beginTransmission(BMA250_I2CADDR);
-  Wire.write(0x0F);
-  Wire.write(range);
-  Wire.endTransmission();
-  //Setup the bandwidth
-  Wire.beginTransmission(BMA250_I2CADDR);
-  Wire.write(0x10);
-  Wire.write(bw);
-  Wire.endTransmission();
+  begin(&Wire, range, bw); // Just call the new one with the default
 }
 
 
 void BMA250::read()
 {
-  //Set register index
-  Wire.beginTransmission(BMA250_I2CADDR);
-  Wire.write(0x02);
-  Wire.endTransmission();
-  //Request seven data bytes
-  Wire.requestFrom(BMA250_I2CADDR, 7);
-  //Receive acceleration measurements as 16 bit integers
-  X = (int16_t)Wire.read();
-  X |= (int16_t)Wire.read() << 8;
-  Y = (int16_t)Wire.read();
-  Y |= (int16_t)Wire.read() << 8;
-  Z = (int16_t)Wire.read();
-  Z |= (int16_t)Wire.read() << 8;
-  //Only use the 10 significant bits
+  // Use the saved I2C bus
+  _wire->beginTransmission(BMA250_I2CADDR);
+  _wire->write(0x02);
+  _wire->endTransmission();
+
+  _wire->requestFrom(BMA250_I2CADDR, 7);
+  
+  X = (int16_t)_wire->read();
+  X |= (int16_t)_wire->read() << 8;
+  Y = (int16_t)_wire->read();
+  Y |= (int16_t)_wire->read() << 8;
+  Z = (int16_t)_wire->read();
+  Z |= (int16_t)_wire->read() << 8;
+  
   X >>= 6; Y >>= 6; Z >>= 6;
-  //Receive temperature measurement
-  rawTemp = Wire.read();
+  
+  rawTemp = _wire->read();
 }
