@@ -19,7 +19,7 @@
 BMA250 accel_sensor;
 int x, y, z, temp;
 TinyScreen display = TinyScreen(TinyScreenPlus);
-int drawBallX, drawBallY;
+int drawBallX = 48, drawBallY = 32;
 
 // Make Serial Monitor compatible for all TinyCircuits processors
 #if defined(ARDUINO_ARCH_AVR)
@@ -36,7 +36,7 @@ void setup() {
   display.setBrightness(15);
   display.setFlip(false);
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Red);
-  display.drawRect(20, 20, 4, 4, TSRectangleFilled, TS_8b_Yellow);
+  display.drawRect(drawBallX, drawBallY, 4, 4, TSRectangleFilled, TS_8b_Yellow);
 
 
   // Initialize Wireling
@@ -69,11 +69,6 @@ void loop() {
     display.drawRect(drawBallX, drawBallY, 4, 4, TSRectangleFilled, TS_8b_Yellow);
     showSerial();                 //Print to Serial Monitor or Serial Plotter
   }
-
-  
-  
-
-
   // The BMA250 can only poll new sensor values every 64ms, so this delay
   // will ensure that we can continue to read values
   delay(256);
