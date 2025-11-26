@@ -141,7 +141,6 @@ class TinyScreen : public Print {
   void startCommand(void);
   void endTransfer(void);
   void begin(void);
-  void reset(void);
   void on(void);
   void off(void);
   void setFlip(uint8_t);

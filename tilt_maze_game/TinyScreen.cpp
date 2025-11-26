@@ -449,23 +449,6 @@ void TinyScreen::begin(void) {
   on();
 }
 
-void TinyScreen::reset(void) {
-
-  pinMode(TSP_PIN_SHDN,OUTPUT);pinMode(TSP_PIN_DC,OUTPUT);pinMode(TSP_PIN_CS,OUTPUT);pinMode(TSP_PIN_RST,OUTPUT);
-  pinMode(TSP_PIN_BT1,INPUT_PULLUP);pinMode(TSP_PIN_BT2,INPUT_PULLUP);pinMode(TSP_PIN_BT3,INPUT_PULLUP);pinMode(TSP_PIN_BT4,INPUT_PULLUP);
-  // datasheet SSD1331 init sequence (0xAE is Display Off command)
-  // NOTE: We skip the initial off() and the hardware/GPIO reset/setup from begin()
-  const uint8_t init[31]={0xA1, 0x00, 0xA2, 0x00, 0xA4, 0xA8, 0x3F,
-  0xAD, 0x8E, 0xB0, 0x0B, 0xB1, 0x31, 0xB3, 0xF0, 0x8A, 0x64, 0x8B,
-  0x78, 0x8C, 0x64, 0xBB, 0x3A, 0xBE, 0x3E, 0x81, 0x91, 0x82, 0x50, 0x83, 0x7D};
-  
-  startCommand();
-  for(uint8_t i=0;i<31;i++)
-    TSSPI->transfer(init[i]);
-  endTransfer();
-  setBrightness(5);
-}
-
 /*
 TinyScreen constructor
 type tells us if we're using a regular TinyScreen, alternate addresss TinyScreen, or a TinyScreen+
