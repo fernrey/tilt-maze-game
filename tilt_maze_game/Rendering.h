@@ -96,6 +96,8 @@ void showGameComplete() {
   display.fontColor(TS_8b_White, TS_8b_Black);
   display.setCursor(boxX + 4, boxY + 28);
   display.print("Press Start");
+
+  delay(500);
 }
 
 #endif

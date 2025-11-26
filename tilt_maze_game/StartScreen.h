@@ -7,10 +7,8 @@ static unsigned long lastBlinkTime = 0;
 static bool showPrompt = true;
 static bool firstFrame = true;
 
-// ---------------------------------------------------------
 // HELPER: DRAW LETTERS (The "Code Font")
-// ---------------------------------------------------------
-// These functions draw 8-bit style letters using rectangles.
+
 // Width: 12px, Height: 16px
 
 void drawT(TinyScreen &d, int x, int y, uint8_t c) {
@@ -66,12 +64,11 @@ void drawPixelBall(TinyScreen &d, int x, int y, uint8_t color) {
   d.drawRect(x+2, y+2, 2, 2, TSRectangleFilled, TS_8b_White);
 }
 
-// ---------------------------------------------------------
+
 // MAIN DRAW FUNCTION
-// ---------------------------------------------------------
 void drawStartScreen(TinyScreen &display) {
   
-  // 1. STATIC LAYER
+  // Tilt Maze Layer
   if (firstFrame) {
       // Background & Border
       display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Black); 
@@ -116,7 +113,7 @@ void drawStartScreen(TinyScreen &display) {
       firstFrame = false; 
   }
 
-  // 2. ANIMATION LAYER for blinking buttom
+  // Animation for blinking buttom
   if (millis() - lastBlinkTime > 500) { 
     lastBlinkTime = millis();
     showPrompt = !showPrompt; 

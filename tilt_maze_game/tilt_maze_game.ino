@@ -22,18 +22,12 @@ void setup() {
 
 void loop() {
   // Handle start screen
-  // Handle start screen
   if (showStartScreen) {
     
-    // 1. ANIMATE: Call this every loop to make the text blink
     drawStartScreen(display); 
 
-    // 2. CHECK INPUT: Your logic here!
-    // (Using standard TinyScreen button checks)
     if (checkButton(TAButton1) || checkButton(TAButton2)) {
-      
       showStartScreen = false;
-
       resetGame(); 
       delay(200);  // Debounce
     }
