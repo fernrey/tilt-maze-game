@@ -1,4 +1,4 @@
-#include <TinyScreen.h>
+#include "TinyScreen.h"
 #include "TinyArcade.h"
 #include "MazeData.h"
 #include "GameLogic.h"

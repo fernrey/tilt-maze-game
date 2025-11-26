@@ -1,7 +1,7 @@
 #ifndef GAMELOGIC_H
 #define GAMELOGIC_H
 
-#include <TinyScreen.h>
+#include "TinyScreen.h"
 #include "MazeData.h"
 
 extern TinyScreen display;

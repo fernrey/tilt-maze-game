@@ -1,7 +1,7 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
-#include <TinyScreen.h>
+#include "TinyScreen.h"
 #include "MazeData.h"
 #include "GameLogic.h"
 

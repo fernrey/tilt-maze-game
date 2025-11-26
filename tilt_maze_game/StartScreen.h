@@ -1,7 +1,7 @@
 #ifndef STARTSCREEN_H
 #define STARTSCREEN_H
 
-#include <TinyScreen.h>
+#include "TinyScreen.h"
 
 static unsigned long lastBlinkTime = 0;
 static bool showPrompt = true;
