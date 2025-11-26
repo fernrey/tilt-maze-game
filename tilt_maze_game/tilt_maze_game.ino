@@ -3,6 +3,7 @@
 #include "MazeData.h"
 #include "GameLogic.h"
 #include "Rendering.h"
+#include "StartScreen.h"
 
 TinyScreen display = TinyScreen(TinyScreenPlus);
 
@@ -14,33 +15,53 @@ void setup() {
   display.setBrightness(15);
   display.setFlip(false);
   
-  drawStartScreen();
+  // Load the first level
+  loadLevel(0);
+  
 }
 
 void loop() {
+  // Handle start screen
+  // Handle start screen
+  if (showStartScreen) {
+    
+    // 1. ANIMATE: Call this every loop to make the text blink
+    drawStartScreen(display); 
 
-   if (showStartScreen) {
-    if (checkButton(TAButton1) || checkButton(TAButton2) || 
-        checkJoystick(TAJoystickUp) || checkJoystick(TAJoystickDown) ||
-        checkJoystick(TAJoystickLeft) || checkJoystick(TAJoystickRight)) {
+    // 2. CHECK INPUT: Your logic here!
+    // (Using standard TinyScreen button checks)
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      
       showStartScreen = false;
-      resetGame();  // Start the game
+
+      resetGame(); 
+      delay(200);  // Debounce
+    }
+    return; // Stop here, don't run game physics yet
+  }
+
+  // Handle game complete screen
+  if (gameComplete) {
+    showGameComplete();
+    
+    // Wait for button press to restart
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      restartGame();
+      gameComplete = false;
       delay(200);  // Debounce
     }
     return;
   }
 
-  // Check for restart
-  if (checkButton(TAButton1) || checkButton(TAButton2)) {
-    resetGame();
-    delay(200);
-    return;
-  }
-  
-  // If level complete, show message
+  // Handle level complete screen
   if (levelComplete) {
     showLevelComplete();
-    delay(100);
+    
+    // Wait for button press to go to next level
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      nextLevel();
+      delay(200);  // Debounce
+    }
     return;
   }
   

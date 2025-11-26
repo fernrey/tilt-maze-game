@@ -46,6 +46,8 @@ void updateBallPosition(int oldX, int oldY, int newX, int newY) {
 }
 
 void showLevelComplete() {
+  static int lastDrawnLevel = -1;
+
   int boxX = 18;
   int boxY = 20;
   int boxW = 60;
@@ -56,29 +58,44 @@ void showLevelComplete() {
 
   display.setFont(liberationSansNarrow_8ptFontInfo);
   display.fontColor(TS_8b_Green, TS_8b_Black);
-  display.setCursor(boxX + 12, boxY + 4);
-  display.print("LEVEL 1");
+  
+  // Show current level number (1-based for display)
+  display.setCursor(boxX + 10, boxY + 4);
+  display.print("LEVEL ");
+  display.print(currentLevel + 1);
+
   display.setCursor(boxX + 8, boxY + 14);
   display.print("FINISHED!");
+  
+  delay(500);
+
+
 }
 
-void drawStartScreen() {
+void showGameComplete() {
   // Clear screen
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Black);
-
-  // Draw title
+  
+  // Draw congratulations box
+  int boxX = 8;
+  int boxY = 12;
+  int boxW = 80;
+  int boxH = 40;
+  
+  display.drawRect(boxX, boxY, boxW, boxH, TSRectangleFilled, TS_8b_Black);
+  display.drawRect(boxX, boxY, boxW, boxH, TSRectangleNoFill, TS_8b_White);
+  
   display.setFont(liberationSansNarrow_8ptFontInfo);
+  display.fontColor(TS_8b_Green, TS_8b_Black);
+  
+  display.setCursor(boxX + 8, boxY + 6);
+  display.print("GAME");
+  display.setCursor(boxX + 6, boxY + 16);
+  display.print("COMPLETE!");
+  
   display.fontColor(TS_8b_White, TS_8b_Black);
-
-  //Draw title of game
-  display.setCursor(15, 15);
-  display.print("TILT MAZE");
-
-  // Draw "Press to Start"
-  display.setCursor(10, 35);
+  display.setCursor(boxX + 4, boxY + 28);
   display.print("Press Start");
-
-  // Draw a decorative border
-  display.drawRect(5, 5, 86, 54, TSRectangleNoFill, TS_8b_White);
 }
+
 #endif

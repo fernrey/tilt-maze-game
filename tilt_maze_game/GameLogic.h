@@ -1,16 +1,17 @@
 #ifndef GAMELOGIC_H
 #define GAMELOGIC_H
 
-#include <TinyScreen.h>  // ADD THIS
+#include <TinyScreen.h>
 #include "MazeData.h"
 
-extern TinyScreen display;  // ADD THIS
+extern TinyScreen display;
 
 // Game state variables
 int ballX = 2;
 int ballY = 2;
 const int ballSize = 3;
 bool levelComplete = false;
+bool gameComplete = false;  // NEW: Track if all levels are finished
 
 // Check if position collides with walls
 bool checkCollision(int newX, int newY) {
@@ -54,18 +55,41 @@ bool checkGoalReached() {
   return (ballGridX == 22 && ballGridY == 14);
 }
 
-// Forward declaration
-void drawMaze();  // ADD THIS
+// Forward declarations
+void drawMaze();
+void showLevelComplete();
+void showGameComplete();
 
 // Reset game to initial state
 void resetGame() {
-  ballX = cellSize + 1;  // Start at (9, 9) approximately
+  ballX = cellSize + 1;
   ballY = cellSize + 1;
   levelComplete = false;
   
   drawMaze();
   
   display.drawRect(ballX, ballY, ballSize, ballSize, TSRectangleFilled, TS_8b_Red);
+}
+
+// Load next level
+void nextLevel() {
+  if (currentLevel < totalLevels - 1) {
+    // Load next level
+    loadLevel(currentLevel + 1);
+    resetGame();
+    levelComplete = false;
+  } else {
+    // All levels complete!
+    gameComplete = true;
+  }
+}
+
+// Restart from level 1
+void restartGame() {
+  loadLevel(0);  // Load level 1
+  resetGame();
+  levelComplete = false;
+  gameComplete = false;
 }
 
 #endif
