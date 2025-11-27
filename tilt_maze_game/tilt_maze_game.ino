@@ -4,8 +4,16 @@
 #include <Wire.h>
 
 TinyScreen display = TinyScreen(TinyScreenPlus);
-BMA250 bma; // Create an instance of the BMA250 object
-int16_t x, y;
+BMA250 bma; // create an instance of the BMA250 (accelerometer) object
+int16_t x, y; // variables holding the x & y acceleration values
+
+// variables for the ball's current position within the screen, defaulting to its center
+int currBallPosX = 48; 
+int currBallPosY = 32;
+
+// variables for the ball's current velocity vector, defaulting to 0 (standstill)
+float ballVelX = 0;
+float ballVelY = 0;
 
 #if defined(ARDUINO_ARCH_AVR)
   #define SerialMonitorInterface Serial
@@ -20,6 +28,7 @@ void setup() {
   // enabling the display and drawing a blank blue screen
   display.begin();
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Blue);
+  display.drawRect(currBallPosX, currBallPosY, 3, 3, TSRectangleFilled, TS_8b_Red);
 }
 
 void loop() {
@@ -38,14 +47,8 @@ void readSensor() {
   bma.begin(BMA250_range_2g, BMA250_update_time_64ms);
   // requesting the sensor data and mapping it to 'global' variables
   bma.read();
-  y = (bma.X / 9) + 32;
-  x = 48 - (bma.Y / 6);
-
-  // printing the raw X & Y sensor values
-  SerialMonitorInterface.print("X: ");
-  SerialMonitorInterface.println(bma.X);
-  SerialMonitorInterface.print("Y: ");
-  SerialMonitorInterface.println(bma.Y);
+  y = bma.X;
+  x = bma.Y;
 
   // stopping I2C communications
   Wire.end();
@@ -57,7 +60,40 @@ void readSensor() {
 }
 
 void drawBall() {
+  // updating the current velocity of the ball
+  // using the acceleration values provided by the sensor
+  ballVelX = ballVelX - x/200.0;
+  ballVelY = ballVelY + y/200.0;
+
+  // logging velocity values
+  SerialMonitorInterface.print("X Velocity: ");
+  SerialMonitorInterface.print(ballVelX);
+  SerialMonitorInterface.print(" Y Velocity: ");
+  SerialMonitorInterface.println(ballVelY);
+
+  // calculating the new X & Y positions
+  int newBallPosX = currBallPosX + ballVelX;
+  int newBallPosY = currBallPosY + ballVelY;
+
+  // collision check with the borders of the screen
+
+  // if the ball's expected position hits a border:
+  // reset its velocity to 0 and position the ball at the border
+  if(newBallPosX <= display.xMax && newBallPosX >= 0){
+    currBallPosX = newBallPosX;
+  } else {
+    currBallPosX = newBallPosX < 0 ? 0 : display.xMax;
+    ballVelX = 0;
+  }
+  if(newBallPosY <= display.yMax && newBallPosY >= 0){
+    currBallPosY = newBallPosY;
+  } else {
+    currBallPosY = newBallPosY < 0 ? 0 : display.yMax;
+    ballVelY = 0;
+  }
+
+  // finally, draw the ball at its new position
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Blue);
-  display.drawRect(x, y, 6, 6, TSRectangleFilled, TS_8b_Red);
+  display.drawRect(currBallPosX, currBallPosY, 3, 3, TSRectangleFilled, TS_8b_Red);
 }
 
