@@ -7,24 +7,44 @@
 
 extern TinyScreen display;
 
+
 void drawMaze() {
   // Clear screen
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Black);
 
-  // Draw walls with black borders (retro style)
+  // Draw maze with connected walls
   for (int y = 0; y < mazeHeight; y++) {
     for (int x = 0; x < mazeWidth; x++) {
       int pixelX = x * cellSize;
       int pixelY = y * cellSize;
 
       if (maze[y][x] == 1) {
-        // Draw black border first (outer rectangle)
-        display.drawRect(pixelX, pixelY, cellSize, cellSize, TSRectangleFilled, TS_8b_Black);
-
-        // Draw white fill inside (inner rectangle, 1 pixel smaller on each side)
-        display.drawRect(pixelX + 1, pixelY + 1, cellSize - 2, cellSize - 2, TSRectangleFilled, TS_8b_White);
-      } else if (x == 22 && y == 14) {  // Your exit position
-        // Draw exit with border too
+        // Check neighboring cells to create connected wall effect
+        bool top = (y > 0 && maze[y-1][x] == 1);
+        bool bottom = (y < mazeHeight-1 && maze[y+1][x] == 1);
+        bool left = (x > 0 && maze[y][x-1] == 1);
+        bool right = (x < mazeWidth-1 && maze[y][x+1] == 1);
+        
+        // Draw solid white wall block
+        display.drawRect(pixelX, pixelY, cellSize, cellSize, TSRectangleFilled, TS_8b_White);
+        
+        // Add black borders only on edges facing open space
+        // This creates the connected, professional wall look
+        if (!top) {
+          display.drawLine(pixelX, pixelY, pixelX + cellSize - 1, pixelY, TS_8b_Black);
+        }
+        if (!bottom) {
+          display.drawLine(pixelX, pixelY + cellSize - 1, pixelX + cellSize - 1, pixelY + cellSize - 1, TS_8b_Black);
+        }
+        if (!left) {
+          display.drawLine(pixelX, pixelY, pixelX, pixelY + cellSize - 1, TS_8b_Black);
+        }
+        if (!right) {
+          display.drawLine(pixelX + cellSize - 1, pixelY, pixelX + cellSize - 1, pixelY + cellSize - 1, TS_8b_Black);
+        }
+      } 
+      else if (x == 22 && y == 14) {  // Exit position
+        // Draw exit with green color
         display.drawRect(pixelX, pixelY, cellSize, cellSize, TSRectangleFilled, TS_8b_Black);
         display.drawRect(pixelX + 1, pixelY + 1, cellSize - 2, cellSize - 2, TSRectangleFilled, TS_8b_Green);
       }
