@@ -168,7 +168,7 @@ void loop() {
       display.print("GO!");
     }
 
-    // After countdown finishes, start timer (if timer mode) and enter gameplay
+    // After countdown finishes, start timer (if timer mode), draw maze/ball, and enter gameplay
     if (elapsed >= COUNTDOWN_DURATION_MS) {
       inCountdown = false;
 
@@ -176,6 +176,10 @@ void loop() {
         startLevelTimer();
         levelTimerStarted = true;
       }
+
+      // Draw the maze and ball once so the game doesn't stay on a blank screen
+      drawMaze();
+      display.drawRect(ballX, ballY, ballSize, ballSize, TSRectangleFilled, TS_8b_Red);
     }
 
     delay(40);
