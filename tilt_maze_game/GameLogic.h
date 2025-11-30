@@ -66,6 +66,7 @@ void resetGame() {
   ballY = cellSize + 1;
   levelComplete = false;
   
+  display.clearScreen(); //this line here clears the display before the maze is drawn. Preventing menu and maze overlap.
   drawMaze();
   
   display.drawRect(ballX, ballY, ballSize, ballSize, TSRectangleFilled, TS_8b_Red);
