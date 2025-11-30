@@ -137,9 +137,12 @@ void loop() {
       // Start countdown instead of timer immediately
       timeUp = false;
       timeUpDrawn = false;
+
+      if(timerMode) {
       inCountdown = true;
       levelTimerStarted = false;
       countdownStartTime = millis();
+      }
 
       delay(200);
     }
