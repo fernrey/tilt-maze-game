@@ -293,10 +293,11 @@ void loop() {
       // Next level starts with countdown again
       timeUp = false;
       timeUpDrawn = false;
+      if(timerMode) {
       inCountdown = true;
       levelTimerStarted = false;
       countdownStartTime = millis();
-
+      }
       delay(200);
     }
     return;
