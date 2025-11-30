@@ -1,84 +1,271 @@
-#include <TinyScreen.h>
-#include <Wire.h>
-#include <SPI.h>
+#include "TinyScreen.h"
 #include "TinyArcade.h"
-#include "GameTutorialSprites.h"
-
-const uint16_t ALPHA = 0x1111;
+#include "MazeData.h"
+#include "GameLogic.h"
+#include "Rendering.h"
+#include "StartScreen.h"
+#include "BMA250.h"
+#include "Wireling.h"
+#include <Wire.h>
+#include "Music.h"
+#include "TimerMode.h"
+#include "Pause.h"
 
 TinyScreen display = TinyScreen(TinyScreenPlus);
+BMA250 bma;
 
-typedef struct {
-  int x;
-  int y;
-  int width;
-  int height;
-  int collisions;
-  const unsigned int *bitmap;
-} ts_sprite;
+// Screen states
+bool showStartScreen = true;
+bool showModeSelect = false;
+bool modeSelectDrawn = false;
+bool gameCompleteDrawn = false;
+bool levelCompleteDrawn = false;
 
-ts_sprite ball = {44,28,4,4,0, ballBitmap};
+// Music variables
+unsigned long lastNoteTime = 0;
+int currentNote = 0;
+int currentTrack = 0;
+bool musicEnabled = true;
 
-int amtSprites = 1;
+// Timer variables
+bool timerMode = false;
+unsigned long levelStartTime = 0;
+unsigned long levelTimeLimit = 0;
+bool timeUp = false;
+bool timeUpDrawn = false;
+int lastDisplayedSeconds = -1;
 
-ts_sprite * spriteList[1] = {&ball};
+// Pause variables
+bool paused = false;
+bool pauseDrawn = false;
+int pauseSelection = 0;
+unsigned long pausedTime = 0;
 
-int backgroundColor = TS_16b_Black;
+// Accelerometer variables
+int16_t accelX, accelY;
+float ballVelX = 0;
+float ballVelY = 0;
 
-void setup () {
+void exitPause() {
+  paused = false;
+  pauseDrawn = false;
+  
+  adjustTimerForPause(pausedTime);
+  
+  drawMaze();
+  display.drawRect(ballX, ballY, ballSize, ballSize, TSRectangleFilled, TS_8b_Red);
+}
+
+void goToMenu() {
+  paused = false;
+  pauseDrawn = false;
+  restartGame();
+  gameComplete = false;
+  gameCompleteDrawn = false;
+  levelComplete = false;
+  levelCompleteDrawn = false;
+  timeUp = false;
+  timeUpDrawn = false;
+  resetStartScreen();
+  showStartScreen = true;
+  switchTrack(0);
+}
+
+void setup() {
   arcadeInit();
   display.begin();
-  display.setBitDepth(TSBitDepth16);
   display.setBrightness(15);
   display.setFlip(false);
-
-USBDevice.init();
-USBDevice.attach();
-SerialUSB.begin(9600);
-}
-
-void loop(){
-  drawBuffer();
-
-if (checkJoystick(TAJoystickUp))    ball.y -= 1;
-if (checkJoystick(TAJoystickDown))  ball.y += 1;
-if (checkJoystick(TAJoystickLeft))  ball.x -= 1;
-if (checkJoystick(TAJoystickRight)) ball.x += 1;
-if (checkButton(TAButton1)) ball.x = 0;
-if (checkButton(TAButton2)) ball.y = 0;
-}
-
-void drawBuffer() {
-  uint8_t lineBuffer[96 * 64 * 2];
-  display.startData();
   
-  for (int y = 0; y < 64; y++) {
-    for (int b = 0; b < 96; b++) {
-      lineBuffer[b * 2] = backgroundColor >> 8;
-      lineBuffer[b * 2 + 1] = backgroundColor;
+  pinMode(speakerPin, OUTPUT);
+  
+  loadLevel(0);
+  switchTrack(0);
+}
+
+void loop() {
+  if (showStartScreen) {
+    drawStartScreen(display);
+    updateMusic();
+    
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      showStartScreen = false;
+      showModeSelect = true;
+      modeSelectDrawn = false;
+      delay(200);
+    }
+    return;
+  }
+  
+  if (showModeSelect) {
+    if (!modeSelectDrawn) {
+      drawModeSelect(display);
+      modeSelectDrawn = true;
+    }
+    updateMusic();
+    
+    if (checkJoystick(TAJoystickUp) || checkJoystick(TAJoystickDown)) {
+      selectedMode = (selectedMode == 0) ? 1 : 0;
+      modeSelectDrawn = false;
+      delay(200);
     }
     
-    for (int spriteIndex = 0; spriteIndex < amtSprites; spriteIndex++) {
-      ts_sprite *cs = spriteList[spriteIndex];
-      if (y >= cs->y && y < cs->y + cs->height) {
-        int endX = cs->x + cs->width;
-        if (cs->x < 96 && endX > 0) {
-          int xBitmapOffset = 0;
-          int xStart = 0;
-          if (cs->x < 0) xBitmapOffset -= cs->x;
-          if (cs->x > 0) xStart = cs->x;
-          int yBitmapOffset = (y - cs->y) * cs->width;
-          for (int x = xStart; x < endX; x++) {
-            unsigned int color = cs->bitmap[xBitmapOffset + yBitmapOffset++];
-            if (color != ALPHA) {
-              lineBuffer[(x) * 2] = color >> 8;
-              lineBuffer[(x) * 2 + 1] = color;
-            }
-          }
-        }
-      }
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      timerMode = (selectedMode == 1);
+      showModeSelect = false;
+      modeSelectDrawn = false;
+      modeSelected = true;
+      switchTrack(currentLevel + 1);
+      resetGame();
+      startLevelTimer();
+      delay(200);
     }
-    display.writeBuffer(lineBuffer, 96 * 2);
+    return;
   }
-  display.endTransfer();
+  
+  if (paused) {
+    if (!pauseDrawn) {
+      drawPauseMenu();
+      pauseDrawn = true;
+    }
+    
+    if (checkJoystick(TAJoystickUp)) {
+      pauseSelection--;
+      if (pauseSelection < 0) pauseSelection = 2;
+      pauseDrawn = false;
+      delay(200);
+    }
+    
+    if (checkJoystick(TAJoystickDown)) {
+      pauseSelection++;
+      if (pauseSelection > 2) pauseSelection = 0;
+      pauseDrawn = false;
+      delay(200);
+    }
+    
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      if (pauseSelection == 0) {
+        exitPause();
+      } else if (pauseSelection == 1) {
+        musicEnabled = !musicEnabled;
+        if (!musicEnabled) {
+          stopMusic();
+        }
+        pauseDrawn = false;
+      } else {
+        goToMenu();
+      }
+      delay(200);
+    }
+    return;
+  }
+  
+  if (timerMode && timeUp) {
+    if (!timeUpDrawn) {
+      showTimeUpScreen();
+      timeUpDrawn = true;
+    }
+    
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      timeUpDrawn = false;
+      resetGame();
+      startLevelTimer();
+      delay(200);
+    }
+    return;
+  }
+  
+  if (gameComplete) {
+    if (!gameCompleteDrawn) {
+      showGameComplete();
+      gameCompleteDrawn = true;
+    }
+    
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      restartGame();
+      gameComplete = false;
+      gameCompleteDrawn = false;
+      resetStartScreen();
+      showStartScreen = true;
+      switchTrack(0);
+      delay(200);
+    }
+    return;
+  }
+  
+  if (levelComplete) {
+    if (!levelCompleteDrawn) {
+      showLevelComplete();
+      levelCompleteDrawn = true;
+    }
+    
+    if (checkButton(TAButton1) || checkButton(TAButton2)) {
+      levelCompleteDrawn = false;
+      nextLevel();
+      switchTrack(currentLevel + 1);
+      startLevelTimer();
+      delay(200);
+    }
+    return;
+  }
+  
+  if (checkButton(TAButton1)) {
+    enterPause();
+    delay(300);
+    return;
+  }
+  
+  if (timerMode && getRemainingTime() == 0) {
+    timeUp = true;
+    stopMusic();
+    return;
+  }
+  
+  drawTimer();
+  updateMusic();
+  
+  int oldX = ballX;
+  int oldY = ballY;
+  int newX = ballX;
+  int newY = ballY;
+  
+  readAccelerometer();
+  
+  ballVelX = ballVelX - accelX / 200.0;
+  ballVelY = ballVelY + accelY / 200.0;
+  
+  ballVelX *= 0.95;
+  ballVelY *= 0.95;
+  
+  newX = ballX + (int)ballVelX;
+  newY = ballY + (int)ballVelY;
+  
+  if (!checkCollision(newX, newY)) {
+    updateBallPosition(oldX, oldY, newX, newY);
+    
+    if (checkGoalReached()) {
+      levelComplete = true;
+      ballVelX = 0;
+      ballVelY = 0;
+    }
+  } else {
+    ballVelX = 0;
+    ballVelY = 0;
+  }
+  
+  delay(40);
+}
+
+void readAccelerometer() {
+  Wireling.begin();
+  bma.begin(BMA250_range_2g, BMA250_update_time_64ms);
+  
+  bma.read();
+  accelY = bma.X;
+  accelX = bma.Y;
+  
+  Wire.end();
+  
+  pinMode(0x16, OUTPUT);
+  pinMode(0x26, OUTPUT);
 }
