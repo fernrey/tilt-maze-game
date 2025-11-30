@@ -52,7 +52,7 @@ bool checkGoalReached() {
   int ballGridX = (ballX + ballSize/2) / cellSize;
   int ballGridY = (ballY + ballSize/2) / cellSize;
   
-  return (ballGridX == 22 && ballGridY == 14);
+  return (ballGridX == goalPositions[currentLevel][0] && ballGridY == goalPositions[currentLevel][1]);
 }
 
 // Forward declarations
@@ -66,6 +66,7 @@ void resetGame() {
   ballY = cellSize + 1;
   levelComplete = false;
   
+  display.clearScreen(); //this line here clears the display before the maze is drawn. Preventing menu and maze overlap.
   drawMaze();
   
   display.drawRect(ballX, ballY, ballSize, ballSize, TSRectangleFilled, TS_8b_Red);

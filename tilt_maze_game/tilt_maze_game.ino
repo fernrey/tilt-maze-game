@@ -115,6 +115,16 @@ void loop() {
       showModeSelect = false;
       modeSelectDrawn = false;
       modeSelected = true;
+
+
+      //adding condition to only load levels if timer mode is selected.
+      if(timerMode) {
+        shuffleLevels();
+      }
+      else {
+        levelsShuffled = false;
+      }
+
       switchTrack(currentLevel + 1);
       resetGame();
       startLevelTimer();
