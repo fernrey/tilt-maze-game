@@ -43,7 +43,7 @@ void drawMaze() {
           display.drawLine(pixelX + cellSize - 1, pixelY, pixelX + cellSize - 1, pixelY + cellSize - 1, TS_8b_Black);
         }
       } 
-      else if (x == 22 && y == 14) {  // Exit position
+      else if (x == goalPositions[currentLevel][0] && y == goalPositions[currentLevel][1]) {  // Exit position
         // Draw exit with green color
         display.drawRect(pixelX, pixelY, cellSize, cellSize, TSRectangleFilled, TS_8b_Black);
         display.drawRect(pixelX + 1, pixelY + 1, cellSize - 2, cellSize - 2, TSRectangleFilled, TS_8b_Green);
