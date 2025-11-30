@@ -239,18 +239,22 @@ void loop() {
   
   newX = ballX + (int)ballVelX;
   newY = ballY + (int)ballVelY;
-  
-  if (!checkCollision(newX, newY)) {
-    updateBallPosition(oldX, oldY, newX, newY);
-    
-    if (checkGoalReached()) {
+
+  if(checkCollision(newX, oldY)) {
+    ballVelX = 0;
+    newX = ballX;
+  }
+  if(checkCollision(newX, newY)) {
+    ballVelY = 0;
+    newY = ballY;
+  }
+
+  updateBallPosition(oldX, oldY, newX, newY);
+
+  if (checkGoalReached()) {
       levelComplete = true;
       ballVelX = 0;
       ballVelY = 0;
-    }
-  } else {
-    ballVelX = 0;
-    ballVelY = 0;
   }
   
   delay(40);
