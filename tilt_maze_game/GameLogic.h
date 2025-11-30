@@ -52,7 +52,7 @@ bool checkGoalReached() {
   int ballGridX = (ballX + ballSize/2) / cellSize;
   int ballGridY = (ballY + ballSize/2) / cellSize;
   
-  return (ballGridX == goalPositions[currentLevel][0] && ballGridY == goalPositions[currentLevel][1]);
+  return (ballGridX == goalPositions[currentMazeIndex][0] && ballGridY == goalPositions[currentMazeIndex][1]);
 }
 
 // Forward declarations
