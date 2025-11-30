@@ -46,6 +46,12 @@ int16_t accelX, accelY;
 float ballVelX = 0;
 float ballVelY = 0;
 
+// Countdown variables
+bool inCountdown = false;
+unsigned long countdownStartTime = 0;
+const unsigned long COUNTDOWN_DURATION_MS = 3000;
+bool levelTimerStarted = false;
+
 void exitPause() {
   paused = false;
   pauseDrawn = false;
@@ -66,6 +72,11 @@ void goToMenu() {
   levelCompleteDrawn = false;
   timeUp = false;
   timeUpDrawn = false;
+
+  // Reset countdown/timer state
+  inCountdown = false;
+  levelTimerStarted = false;
+
   resetStartScreen();
   showStartScreen = true;
   switchTrack(0);
@@ -81,9 +92,13 @@ void setup() {
   
   loadLevel(0);
   switchTrack(0);
+
+  inCountdown = false;
+  levelTimerStarted = false;
 }
 
 void loop() {
+  // Start screen
   if (showStartScreen) {
     drawStartScreen(display);
     updateMusic();
@@ -97,6 +112,7 @@ void loop() {
     return;
   }
   
+  // Mode select screen
   if (showModeSelect) {
     if (!modeSelectDrawn) {
       drawModeSelect(display);
@@ -117,12 +133,56 @@ void loop() {
       modeSelected = true;
       switchTrack(currentLevel + 1);
       resetGame();
-      startLevelTimer();
+
+      // Start countdown instead of timer immediately
+      timeUp = false;
+      timeUpDrawn = false;
+      inCountdown = true;
+      levelTimerStarted = false;
+      countdownStartTime = millis();
+
       delay(200);
     }
     return;
   }
+
+  // Countdown phase before gameplay
+  if (inCountdown) {
+    updateMusic();
+
+    unsigned long now = millis();
+    unsigned long elapsed = now - countdownStartTime;
+    long remainingMs = (long)COUNTDOWN_DURATION_MS - (long)elapsed;
+    if (remainingMs < 0) remainingMs = 0;
+
+    int secondsLeft = (remainingMs + 999) / 1000;
+
+    display.clearScreen();
+
+    display.setCursor(20, 20);
+    if (secondsLeft > 0) {
+      display.print("Starting in");
+      display.setCursor(46, 36);
+      display.print(secondsLeft);
+    } else {
+      display.print("GO!");
+    }
+
+    // After countdown finishes, start timer (if timer mode) and enter gameplay
+    if (elapsed >= COUNTDOWN_DURATION_MS) {
+      inCountdown = false;
+
+      if (timerMode && !levelTimerStarted) {
+        startLevelTimer();
+        levelTimerStarted = true;
+      }
+    }
+
+    delay(40);
+    return;
+  }
   
+  // Pause menu
   if (paused) {
     if (!pauseDrawn) {
       drawPauseMenu();
@@ -160,6 +220,7 @@ void loop() {
     return;
   }
   
+  // Time up screen in timer mode
   if (timerMode && timeUp) {
     if (!timeUpDrawn) {
       showTimeUpScreen();
@@ -168,13 +229,20 @@ void loop() {
     
     if (checkButton(TAButton1) || checkButton(TAButton2)) {
       timeUpDrawn = false;
+      timeUp = false;
       resetGame();
-      startLevelTimer();
+
+      // Restart with countdown
+      inCountdown = true;
+      levelTimerStarted = false;
+      countdownStartTime = millis();
+
       delay(200);
     }
     return;
   }
   
+  // Game complete screen
   if (gameComplete) {
     if (!gameCompleteDrawn) {
       showGameComplete();
@@ -193,6 +261,7 @@ void loop() {
     return;
   }
   
+  // Level complete screen
   if (levelComplete) {
     if (!levelCompleteDrawn) {
       showLevelComplete();
@@ -203,24 +272,34 @@ void loop() {
       levelCompleteDrawn = false;
       nextLevel();
       switchTrack(currentLevel + 1);
-      startLevelTimer();
+
+      // Next level starts with countdown again
+      timeUp = false;
+      timeUpDrawn = false;
+      inCountdown = true;
+      levelTimerStarted = false;
+      countdownStartTime = millis();
+
       delay(200);
     }
     return;
   }
   
+  // Enter pause
   if (checkButton(TAButton1)) {
     enterPause();
     delay(300);
     return;
   }
   
+  // Timer mode: check if time has run out
   if (timerMode && getRemainingTime() == 0) {
     timeUp = true;
     stopMusic();
     return;
   }
   
+  // Normal gameplay UI + music
   drawTimer();
   updateMusic();
   
