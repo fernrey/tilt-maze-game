@@ -29,6 +29,13 @@ void setup() {
   display.begin();
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Blue);
   display.drawRect(currBallPosX, currBallPosY, 3, 3, TSRectangleFilled, TS_8b_Red);
+  display.setFont({
+  10, /*  Character height */
+  ' ', /*  Start character */
+  '~', /*  End character */
+  thinPixel7_10ptDescriptors, /*  Character descriptor array */
+  thinPixel7_10ptBitmaps, /*  Character bitmap array */
+}); 
 }
 
 void loop() {
@@ -95,5 +102,20 @@ void drawBall() {
   // finally, draw the ball at its new position
   display.drawRect(0, 0, 96, 64, TSRectangleFilled, TS_8b_Blue);
   display.drawRect(currBallPosX, currBallPosY, 3, 3, TSRectangleFilled, TS_8b_Red);
+  display.setCursor(0, 0);
+  display.print("posX:");
+  display.print(currBallPosX);
+  display.print(" Y:");
+  display.print(currBallPosY);
+  display.setCursor(0, 10);
+  display.print("velX:");
+  display.print(ballVelX, 1);
+  display.print(" Y:");
+  display.print(ballVelY, 1);
+  display.setCursor(0, 20);
+  display.print("accelX:");
+  display.print(x/200.0, 1);
+  display.print(" Y:");
+  display.print(y/200.0, 1);
 }
 
